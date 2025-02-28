@@ -19,3 +19,22 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+### Explicación del Flujo
+
+1. **Recibir Solicitud POST**: El servidor recibe una solicitud POST con el `accountId`, `phoneNumber` y `message`.
+2. **Verificar Cuenta**: El servidor verifica si la cuenta existe en la base de datos.
+3. **Iniciar Sesión WhatsApp**: Si la sesión no está activa, se inicia una nueva sesión y se muestra el QR en la consola.
+4. **Enviar Mensaje**: Una vez que la sesión está lista, se envía el mensaje al número de teléfono especificado.
+
+Este flujo es escalable y fácil de mantener, ya que cada cuenta se maneja de forma independiente y se almacena en MongoDB. Además, el uso de `whatsapp-web.js` permite manejar múltiples sesiones de WhatsApp de manera eficiente.
+
+---
+
+### Resumen
+
+- **Persistencia de sesiones**: Las sesiones se guardan en archivos JSON y se restauran automáticamente al reiniciar el servidor.
+- **Sin QR repetido**: Solo necesitas escanear el QR la primera vez que inicias una cuenta.
+- **Escalable**: Puedes agregar tantas cuentas como necesites, y cada una tendrá su propia sesión persistente.
+
+¡Ahora sí, esto es viable para producción! 🚀
