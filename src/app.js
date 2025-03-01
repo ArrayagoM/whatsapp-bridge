@@ -20,7 +20,7 @@ mongoose
   .catch((err) => console.error('No se pudo conectar a MongoDB', err));
 app.use(express.static(path.join(__dirname, 'src', 'views')));
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'src', 'views', 'index.html'));
+  res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
 app.use('/api/whatsapp', whatsappRoutes);
 
