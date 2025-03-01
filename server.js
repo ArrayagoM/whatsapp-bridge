@@ -1,6 +1,15 @@
 require('dotenv').config();
 const app = require('./src/app');
-const PORT = process.env.PORT || 3000;
+const os = require('os');
+const fs = require('fs');
+const path = require('path');
+const tempDir = path.join(__dirname, 'temp');
+
+if (!fs.existsSync(tempDir)) {
+  fs.mkdirSync(tempDir);
+  console.log('Carpeta temporal creada:', tempDir);
+}
+const PORT = process.env.PORT || 5656;
 
 function getLocalIP() {
   const interfaces = os.networkInterfaces();
@@ -15,5 +24,6 @@ function getLocalIP() {
 }
 
 app.listen(PORT, () => {
+  getLocalIP();
   console.log(`Server running on port ${PORT}`);
 });

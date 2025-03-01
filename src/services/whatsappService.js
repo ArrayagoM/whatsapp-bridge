@@ -8,11 +8,14 @@ const clients = new Map();
 
 // Función para inicializar un cliente de WhatsApp
 const initializeClient = async (accountId) => {
-  const sessionPath = path.join(__dirname, '..', 'sessions', `${accountId}.json`);
+  const sessionPath = path.join(__dirname, '..', 'temp', `${accountId}.json`);
 
   const client = new Client({
-    authStrategy: new LocalAuth({ clientId: accountId }), // Guarda la sesión en un archivo
-    puppeteer: { headless: true }, // Ejecutar en modo sin cabeza
+    authStrategy: new LocalAuth({
+      clientId: accountId,
+      dataPath: path.join(__dirname, '..', 'temp'),
+    }),
+    puppeteer: { headless: true },
   });
 
   clients.set(accountId, client);
@@ -29,7 +32,6 @@ const initializeClient = async (accountId) => {
   client.on('disconnected', (reason) => {
     console.log(`Cliente ${accountId} desconectado. Razón: ${reason}`);
     clients.delete(accountId);
-    // Eliminar el archivo de sesión si existe
     if (fs.existsSync(sessionPath)) {
       fs.unlinkSync(sessionPath);
     }
@@ -58,4 +60,4 @@ const sendMessage = async (accountId, phoneNumber, message) => {
   await client.sendMessage(chatId, message);
 };
 
-module.exports = { initializeAllClients, sendMessage };
+module.exports = { initializeAllClients, sendMessage, initializeClient };

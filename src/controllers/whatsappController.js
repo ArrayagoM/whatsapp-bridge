@@ -26,4 +26,18 @@ const sendMessage = async (req, res) => {
   }
 };
 
-module.exports = { startSession, sendMessage };
+const registerUser = async (req, res) => {
+  const { name, phoneNumber } = req.body;
+
+  try {
+    const account = new Account({ name, phoneNumber });
+    await account.save();
+
+    await initializeClient(account._id.toString());
+    res.status(200).json({ success: true, qr: 'QR generado. Escanea para autenticar.' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = { startSession, sendMessage, registerUser };

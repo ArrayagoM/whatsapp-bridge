@@ -22,9 +22,12 @@
   "dependencies": {
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "fs": "^0.0.1-security",
     "mongoose": "^8.11.0",
     "morgan": "^1.10.0",
     "nodemon": "^3.1.9",
+    "os": "^0.1.2",
+    "path": "^0.12.7",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.26.0"
   }

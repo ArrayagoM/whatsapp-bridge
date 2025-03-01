@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Registrar Usuario</title>
+  </head>
+  <body>
+    <h1>Registrar Usuario</h1>
+    <form id="registerForm">
+      <label for="name">Nombre:</label>
+      <input type="text" id="name" name="name" required />
+      <br />
+      <label for="phoneNumber">Número de Teléfono:</label>
+      <input type="text" id="phoneNumber" name="phoneNumber" required />
+      <br />
+      <button type="submit">Registrar</button>
+    </form>
+    <div id="qrCode"></div>
+
+    <script>
+      document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('name').value;
+        const phoneNumber = document.getElementById('phoneNumber').value;
+
+        const response = await fetch('/api/whatsapp/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, phoneNumber }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          alert('Usuario registrado correctamente. Escanea el QR para autenticar.');
+          document.getElementById('qrCode').innerHTML = `<img src="${data.qr}" alt="QR Code">`;
+        } else {
+          alert('Error: ' + data.message);
+        }
+      });
+    </script>
+  </body>
+</html>

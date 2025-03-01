@@ -1,5 +1,6 @@
 const express = require('express');
 const morgan = require('morgan');
+const path = require('path');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const whatsappRoutes = require('./routes/whatsappRoutes');
@@ -21,8 +22,9 @@ mongoose
     await initializeAllClients();
   })
   .catch((err) => console.error('No se pudo conectar a MongoDB', err));
+app.use(express.static(path.join(__dirname, 'src', 'views')));
 app.get('/', (req, res) => {
-  res.status(200).send(' welcome to my assytan WhatsApp server ');
+  res.sendFile(path.join(__dirname, 'src', 'views', 'index.html'));
 });
 app.use('/api/whatsapp', whatsappRoutes);
 
