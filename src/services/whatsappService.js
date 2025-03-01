@@ -38,7 +38,7 @@ const initializeClient = async (accountId) => {
       session: session,
       puppeteer: {
         headless: true,
-        executablePath: await getChromiumPath(),
+        executablePath: '/usr/bin/chromium-browser',
         args: process.env.NODE_ENV === 'production' ? chromium.args : [],
       },
     });
@@ -51,7 +51,7 @@ const initializeClient = async (accountId) => {
       qrcode.generate(qr, { small: true });
       if (!qrResolved) {
         qrResolved = true;
-        resolve(qr); // Devuelve el código QR
+        resolve(qr);
       }
     });
 
@@ -59,11 +59,9 @@ const initializeClient = async (accountId) => {
       console.log(`Cliente ${accountId} está listo!`);
       await saveSession(accountId, client.session);
       if (!qrResolved) {
-        // Si ya existe una sesión y no se emitió evento 'qr', forzamos la regeneración eliminando la sesión
-        // O bien, se puede resolver con un mensaje, pero aquí forzamos la generación de QR:
         console.log(`No se emitió QR, pero la sesión ya está activa.`);
         qrResolved = true;
-        resolve("Cliente ya autenticado, no se generó nuevo QR.");
+        resolve('Cliente ya autenticado, no se generó nuevo QR.');
       }
     });
 
@@ -71,6 +69,11 @@ const initializeClient = async (accountId) => {
       console.log(`Cliente ${accountId} desconectado. Razón: ${reason}`);
       clients.delete(accountId);
       await Session.deleteOne({ accountId });
+    });
+
+    client.on('disconnected', (reason) => {
+      console.log('Cliente desconectado:', reason);
+      client.destroy();
     });
 
     try {
