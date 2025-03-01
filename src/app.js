@@ -22,6 +22,11 @@ app.use(express.static(path.join(__dirname, 'src', 'views')));
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
+
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end();
+});
+
 app.use('/api/whatsapp', whatsappRoutes);
 
 module.exports = app;
