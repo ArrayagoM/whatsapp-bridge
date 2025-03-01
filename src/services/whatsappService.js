@@ -1,20 +1,27 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { Client } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const Account = require('../models/Account');
-const fs = require('fs');
-const path = require('path');
+const Session = require('../models/Session');
 
 const clients = new Map();
 
+// Función para guardar la sesión en MongoDB
+const saveSession = async (accountId, session) => {
+  await Session.findOneAndUpdate({ accountId }, { session }, { upsert: true, new: true });
+};
+
+// Función para cargar la sesión desde MongoDB
+const loadSession = async (accountId) => {
+  const sessionData = await Session.findOne({ accountId });
+  return sessionData ? sessionData.session : null;
+};
+
 // Función para inicializar un cliente de WhatsApp
 const initializeClient = async (accountId) => {
-  const sessionPath = path.join(__dirname, '..', 'temp', `${accountId}.json`);
+  const session = await loadSession(accountId);
 
   const client = new Client({
-    authStrategy: new LocalAuth({
-      clientId: accountId,
-      dataPath: path.join(__dirname, '..', 'temp'),
-    }),
+    session: session,
     puppeteer: { headless: true },
   });
 
@@ -25,16 +32,17 @@ const initializeClient = async (accountId) => {
     qrcode.generate(qr, { small: true });
   });
 
-  client.on('ready', () => {
+  client.on('ready', async () => {
     console.log(`Cliente ${accountId} está listo!`);
+    // Guardar la sesión en MongoDB
+    await saveSession(accountId, client.session);
   });
 
-  client.on('disconnected', (reason) => {
+  client.on('disconnected', async (reason) => {
     console.log(`Cliente ${accountId} desconectado. Razón: ${reason}`);
     clients.delete(accountId);
-    if (fs.existsSync(sessionPath)) {
-      fs.unlinkSync(sessionPath);
-    }
+    // Eliminar la sesión de MongoDB
+    await Session.deleteOne({ accountId });
   });
 
   await client.initialize();

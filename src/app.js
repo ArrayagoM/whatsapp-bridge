@@ -12,13 +12,9 @@ const app = express();
 app.use(express.json());
 app.use(morgan('dev'));
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGO_URI, {})
   .then(async () => {
     console.log('Conectado a MongoDB');
-    // Inicializar todas las cuentas al arrancar el servidor
     await initializeAllClients();
   })
   .catch((err) => console.error('No se pudo conectar a MongoDB', err));
