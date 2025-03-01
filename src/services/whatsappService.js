@@ -7,13 +7,15 @@ const Session = require('../models/Session');
 const puppeteer =
   process.env.NODE_ENV === 'production' ? require('puppeteer-core') : require('puppeteer');
 
+const chromium = process.env.NODE_ENV === 'production' ? require('@sparticuz/chromium') : null;
+
 const clients = new Map();
 
 // Configurar la ruta de Chromium
-const getChromiumPath = () => {
+const getChromiumPath = async () => {
   if (process.env.NODE_ENV === 'production') {
     // Ruta de Chromium en Vercel
-    return '/usr/bin/chromium-browser';
+    return await chromium.executablePath();
   } else {
     // Ruta de Chromium descargada por puppeteer en desarrollo
     return puppeteer.executablePath();
@@ -39,8 +41,8 @@ const initializeClient = async (accountId) => {
     session: session,
     puppeteer: {
       headless: true,
-      executablePath: getChromiumPath(), // Usar la ruta correcta de Chromium
-      args: ['--no-sandbox', '--disable-setuid-sandbox'], // Argumentos necesarios para Vercel
+      executablePath: await getChromiumPath(), // Usar la ruta correcta de Chromium
+      args: process.env.NODE_ENV === 'production' ? chromium.args : [], // Argumentos necesarios para Vercel
     },
   });
 
