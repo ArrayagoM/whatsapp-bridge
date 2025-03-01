@@ -3,10 +3,8 @@ const qrcode = require('qrcode-terminal');
 const Account = require('../models/Account');
 const Session = require('../models/Session');
 
-// Usar puppeteer-core en producción y puppeteer en desarrollo
 const puppeteer =
   process.env.NODE_ENV === 'production' ? require('puppeteer-core') : require('puppeteer');
-
 const chromium = process.env.NODE_ENV === 'production' ? require('@sparticuz/chromium') : null;
 
 const clients = new Map();
@@ -14,10 +12,8 @@ const clients = new Map();
 // Configurar la ruta de Chromium
 const getChromiumPath = async () => {
   if (process.env.NODE_ENV === 'production') {
-    // Ruta de Chromium en Vercel
     return await chromium.executablePath();
   } else {
-    // Ruta de Chromium descargada por puppeteer en desarrollo
     return puppeteer.executablePath();
   }
 };
@@ -33,18 +29,13 @@ const loadSession = async (accountId) => {
   return sessionData ? sessionData.session : null;
 };
 
-// Función para inicializar un cliente de WhatsApp
+// Función para inicializar un cliente de WhatsApp y devolver el QR
 const initializeClient = async (accountId) => {
   const session = await loadSession(accountId);
 
-  if (session) {
-    console.log(`Cargando sesión existente para ${accountId}`);
-    return; // Si ya hay sesión, no hace falta mostrar QR
-  }
-
   return new Promise(async (resolve, reject) => {
     const client = new Client({
-      session,
+      session: session,
       puppeteer: {
         headless: true,
         executablePath: await getChromiumPath(),
@@ -54,14 +45,26 @@ const initializeClient = async (accountId) => {
 
     clients.set(accountId, client);
 
+    let qrResolved = false;
     client.on('qr', (qr) => {
-      console.log(`QR generado para ${accountId}`);
-      resolve(qr);
+      console.log(`QR para la cuenta ${accountId}: ${qr}`);
+      qrcode.generate(qr, { small: true });
+      if (!qrResolved) {
+        qrResolved = true;
+        resolve(qr); // Devuelve el código QR
+      }
     });
 
     client.on('ready', async () => {
       console.log(`Cliente ${accountId} está listo!`);
       await saveSession(accountId, client.session);
+      if (!qrResolved) {
+        // Si ya existe una sesión y no se emitió evento 'qr', forzamos la regeneración eliminando la sesión
+        // O bien, se puede resolver con un mensaje, pero aquí forzamos la generación de QR:
+        console.log(`No se emitió QR, pero la sesión ya está activa.`);
+        qrResolved = true;
+        resolve("Cliente ya autenticado, no se generó nuevo QR.");
+      }
     });
 
     client.on('disconnected', async (reason) => {
@@ -78,7 +81,7 @@ const initializeClient = async (accountId) => {
   });
 };
 
-// Función para inicializar todas las cuentas
+// Función para inicializar todas las cuentas (al arrancar la app)
 const initializeAllClients = async () => {
   const accounts = await Account.find({});
   accounts.forEach((account) => {

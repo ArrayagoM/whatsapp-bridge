@@ -8,4 +8,6 @@ const sessionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Session', sessionSchema);
+const Session = mongoose.model('Session', sessionSchema);
+
+module.exports = Session;

@@ -21,26 +21,25 @@
     </div>
 
     <script>
-        document.getElementById('registerForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('name').value;
-            const phoneNumber = document.getElementById('phoneNumber').value;
-          
-            const response = await fetch('/api/whatsapp/register', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ name, phoneNumber }),
-            });
-          
-            const data = await response.json();
-            if (data.success && data.qr) {
-              alert(data.message);
-              document.getElementById('qrCode').innerHTML = `<img src="${data.qr}" alt="QR Code">`;
-            } else {
-              alert('Error: ' + data.message);
-            }
-          });
-          
+      document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('name').value;
+        const phoneNumber = document.getElementById('phoneNumber').value;
+
+        const response = await fetch('/api/whatsapp/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, phoneNumber }),
+        });
+
+        const data = await response.json();
+        if (data.success && data.qr) {
+          alert('Usuario registrado correctamente. Escanea el QR para autenticar.');
+          document.getElementById('qrCode').innerHTML = `<img src="${data.qr}" alt="QR Code">`;
+        } else {
+          alert('Error: ' + data.message);
+        }
+      });
     </script>
   </body>
 </html>
