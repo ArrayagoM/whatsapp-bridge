@@ -37,34 +37,45 @@ const loadSession = async (accountId) => {
 const initializeClient = async (accountId) => {
   const session = await loadSession(accountId);
 
-  const client = new Client({
-    session: session,
-    puppeteer: {
-      headless: true,
-      executablePath: await getChromiumPath(), // Usar la ruta correcta de Chromium
-      args: process.env.NODE_ENV === 'production' ? chromium.args : [], // Argumentos necesarios para Vercel
-    },
+  if (session) {
+    console.log(`Cargando sesión existente para ${accountId}`);
+    return; // Si ya hay sesión, no hace falta mostrar QR
+  }
+
+  return new Promise(async (resolve, reject) => {
+    const client = new Client({
+      session,
+      puppeteer: {
+        headless: true,
+        executablePath: await getChromiumPath(),
+        args: process.env.NODE_ENV === 'production' ? chromium.args : [],
+      },
+    });
+
+    clients.set(accountId, client);
+
+    client.on('qr', (qr) => {
+      console.log(`QR generado para ${accountId}`);
+      resolve(qr);
+    });
+
+    client.on('ready', async () => {
+      console.log(`Cliente ${accountId} está listo!`);
+      await saveSession(accountId, client.session);
+    });
+
+    client.on('disconnected', async (reason) => {
+      console.log(`Cliente ${accountId} desconectado. Razón: ${reason}`);
+      clients.delete(accountId);
+      await Session.deleteOne({ accountId });
+    });
+
+    try {
+      await client.initialize();
+    } catch (error) {
+      reject(error);
+    }
   });
-
-  clients.set(accountId, client);
-
-  client.on('qr', (qr) => {
-    console.log(`QR para la cuenta ${accountId}:`);
-    qrcode.generate(qr, { small: true });
-  });
-
-  client.on('ready', async () => {
-    console.log(`Cliente ${accountId} está listo!`);
-    await saveSession(accountId, client.session);
-  });
-
-  client.on('disconnected', async (reason) => {
-    console.log(`Cliente ${accountId} desconectado. Razón: ${reason}`);
-    clients.delete(accountId);
-    await Session.deleteOne({ accountId });
-  });
-
-  await client.initialize();
 };
 
 // Función para inicializar todas las cuentas

@@ -17,7 +17,9 @@ mongoose
     console.log('Conectado a MongoDB');
     await initializeAllClients();
   })
-  .catch((err) => console.error('No se pudo conectar a MongoDB', err));
+  .then(() => console.log('🟢 Conectado a MongoDB'))
+  .catch((err) => console.error('🔴 Error al conectar a MongoDB:', err));
+
 app.use(express.static(path.join(__dirname, 'src', 'views')));
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'index.html'));

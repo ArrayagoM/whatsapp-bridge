@@ -30,15 +30,22 @@ const registerUser = async (req, res) => {
   const { name, phoneNumber } = req.body;
 
   try {
-    console.log('Account Model:', Account);
-    if (!Account) {
-      throw new Error('El modelo Account no está definido');
+    let account = await Account.findOne({ phoneNumber });
+
+    if (account) {
+      console.log(`Usuario ${phoneNumber} ya registrado.`);
+      // Si ya está registrado, inicializamos el cliente y devolvemos el QR
+      const qr = await whatsappService.initializeClient(account._id.toString());
+      return res
+        .status(200)
+        .json({ success: true, message: 'Usuario ya registrado. Escanea el QR.', qr });
     }
-    const account = new Account({ name, phoneNumber });
+
+    account = new Account({ name, phoneNumber });
     await account.save();
 
-    await initializeClient(account._id.toString());
-    res.status(200).json({ success: true, qr: 'QR generado. Escanea para autenticar.' });
+    const qr = await whatsappService.initializeClient(account._id.toString());
+    res.status(201).json({ success: true, message: 'Usuario registrado correctamente.', qr });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
