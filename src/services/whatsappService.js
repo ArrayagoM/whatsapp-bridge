@@ -3,7 +3,22 @@ const qrcode = require('qrcode-terminal');
 const Account = require('../models/Account');
 const Session = require('../models/Session');
 
+// Usar puppeteer-core en producción y puppeteer en desarrollo
+const puppeteer =
+  process.env.NODE_ENV === 'production' ? require('puppeteer-core') : require('puppeteer');
+
 const clients = new Map();
+
+// Configurar la ruta de Chromium
+const getChromiumPath = () => {
+  if (process.env.NODE_ENV === 'production') {
+    // Ruta de Chromium en Vercel
+    return '/usr/bin/chromium-browser';
+  } else {
+    // Ruta de Chromium descargada por puppeteer en desarrollo
+    return puppeteer.executablePath();
+  }
+};
 
 // Función para guardar la sesión en MongoDB
 const saveSession = async (accountId, session) => {
@@ -22,7 +37,11 @@ const initializeClient = async (accountId) => {
 
   const client = new Client({
     session: session,
-    puppeteer: { headless: true },
+    puppeteer: {
+      headless: true,
+      executablePath: getChromiumPath(), // Usar la ruta correcta de Chromium
+      args: ['--no-sandbox', '--disable-setuid-sandbox'], // Argumentos necesarios para Vercel
+    },
   });
 
   clients.set(accountId, client);
@@ -34,14 +53,12 @@ const initializeClient = async (accountId) => {
 
   client.on('ready', async () => {
     console.log(`Cliente ${accountId} está listo!`);
-    // Guardar la sesión en MongoDB
     await saveSession(accountId, client.session);
   });
 
   client.on('disconnected', async (reason) => {
     console.log(`Cliente ${accountId} desconectado. Razón: ${reason}`);
     clients.delete(accountId);
-    // Eliminar la sesión de MongoDB
     await Session.deleteOne({ accountId });
   });
 
