@@ -21,6 +21,7 @@
   "homepage": "https://github.com/ArrayagoM/whatsapp-bridge#readme",
   "dependencies": {
     "@sparticuz/chromium": "^132.0.0",
+    "@vercel/speed-insights": "^1.2.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "fs": "^0.0.1-security",

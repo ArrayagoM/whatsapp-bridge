@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const whatsappRoutes = require('./routes/whatsappRoutes');
 const { initializeAllClients } = require('./services/whatsappService');
+const { injectSpeedInsightsScript } = require('@vercel/speed-insights');
 
 dotenv.config();
 
@@ -20,6 +21,15 @@ mongoose
   })
   .then(() => console.log('🟢 Conectado a MongoDB'))
   .catch((err) => console.error('🔴 Error al conectar a MongoDB:', err));
+
+app.use((req, res, next) => {
+  res.setHeader(
+    'Content-Security-Policy',
+    "script-src 'self' 'unsafe-inline' https://*.vercel.app"
+  );
+  injectSpeedInsightsScript(res);
+  next();
+});
 
 app.use(express.static(path.join(__dirname, 'src', 'views')));
 app.get('/', (req, res) => {
