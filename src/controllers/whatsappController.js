@@ -7,11 +7,8 @@ const startSession = async (req, res) => {
   const { accountId } = req.body;
 
   try {
-    // Si se requiere iniciar sesión de nuevo
-    await whatsappService.startSession(accountId);
-    res
-      .status(200)
-      .json({ success: true, message: 'QR generado. Please scan it to authenticate.' });
+    const qr = await whatsappService.initializeClient(accountId);
+    res.status(200).json({ success: true, qr });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -23,13 +20,13 @@ const sendMessage = async (req, res) => {
 
   try {
     await whatsappService.sendMessage(accountId, phoneNumber, message);
-    res.status(200).json({ success: true, message: 'Message sent successfully' });
+    res.status(200).json({ success: true, message: 'Mensaje enviado correctamente.' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Registrar usuario y siempre devolver QR (incluso si ya existe)
+// Registrar usuario
 const registerUser = async (req, res) => {
   const { name, phoneNumber } = req.body;
 
@@ -38,9 +35,6 @@ const registerUser = async (req, res) => {
     if (!account) {
       account = new Account({ name, phoneNumber });
       await account.save();
-    } else {
-      // Si ya existe, eliminamos la sesión anterior para forzar la generación de un nuevo QR
-      await Session.deleteOne({ accountId: account._id.toString() });
     }
     const qr = await whatsappService.initializeClient(account._id.toString());
     res.status(200).json({ success: true, qr });

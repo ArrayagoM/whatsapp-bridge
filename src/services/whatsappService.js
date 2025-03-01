@@ -1,95 +1,58 @@
-const { Client } = require('whatsapp-web.js');
+const { useMultiFileAuthState, makeWASocket } = require('@whiskeysockets/baileys');
 const qrcode = require('qrcode-terminal');
 const Account = require('../models/Account');
 const Session = require('../models/Session');
-
-const puppeteer =
-  process.env.NODE_ENV === 'production' ? require('puppeteer-core') : require('puppeteer');
-const chromium = process.env.NODE_ENV === 'production' ? require('@sparticuz/chromium') : null;
+const path = require('path');
+const fs = require('fs');
 
 const clients = new Map();
 
-// Configurar la ruta de Chromium
-const getChromiumPath = async () => {
-  if (process.env.NODE_ENV === 'production') {
-    return await chromium.executablePath();
-  } else {
-    return puppeteer.executablePath();
-  }
-};
-
-// Función para guardar la sesión en MongoDB
-const saveSession = async (accountId, session) => {
-  await Session.findOneAndUpdate({ accountId }, { session }, { upsert: true, new: true });
-};
-
-// Función para cargar la sesión desde MongoDB
-const loadSession = async (accountId) => {
-  const sessionData = await Session.findOne({ accountId });
-  return sessionData ? sessionData.session : null;
-};
-
-// Función para inicializar un cliente de WhatsApp y devolver el QR
+// Función para inicializar un cliente de WhatsApp
 const initializeClient = async (accountId) => {
-  const session = await loadSession(accountId);
+  const sessionPath = path.join(__dirname, '..', 'sessions', accountId);
 
-  return new Promise(async (resolve, reject) => {
-    const client = new Client({
-      session: session,
-      puppeteer: {
-        headless: true,
-        executablePath: '/usr/bin/chromium-browser',
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--single-process',
-          '--disable-gpu',
-        ],
-        headless: true,
-      },
-    });
+  // Crear la carpeta de sesión si no existe
+  if (!fs.existsSync(sessionPath)) {
+    fs.mkdirSync(sessionPath, { recursive: true });
+  }
 
-    clients.set(accountId, client);
+  // Cargar el estado de autenticación
+  const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
 
-    let qrResolved = false;
-    client.on('qr', (qr) => {
-      console.log(`QR para la cuenta ${accountId}: ${qr}`);
+  const client = makeWASocket({
+    auth: state,
+    printQRInTerminal: false,
+  });
+
+  clients.set(accountId, client);
+
+  // Escuchar el evento de QR
+  client.ev.on('connection.update', (update) => {
+    const { qr } = update;
+    if (qr) {
+      console.log(`QR para la cuenta ${accountId}:`);
       qrcode.generate(qr, { small: true });
-      if (!qrResolved) {
-        qrResolved = true;
-        resolve(qr);
-      }
-    });
-
-    client.on('ready', async () => {
-      console.log(`Cliente ${accountId} está listo!`);
-      await saveSession(accountId, client.session);
-      if (!qrResolved) {
-        console.log(`No se emitió QR, pero la sesión ya está activa.`);
-        qrResolved = true;
-        resolve('Cliente ya autenticado, no se generó nuevo QR.');
-      }
-    });
-
-    client.on('disconnected', (reason) => {
-      console.log('Cliente desconectado:', reason);
-      client.destroy();
-      process.exit(1);
-    });
-
-    try {
-      await client.initialize();
-    } catch (error) {
-      reject(error);
     }
   });
+
+  // Escuchar el evento de autenticación exitosa
+  client.ev.on('creds.update', saveCreds);
+
+  // Escuchar el evento de conexión
+  client.ev.on('connection.update', (update) => {
+    const { connection } = update;
+    if (connection === 'open') {
+      console.log(`Cliente ${accountId} está listo!`);
+    } else if (connection === 'close') {
+      console.log(`Cliente ${accountId} desconectado.`);
+      clients.delete(accountId);
+    }
+  });
+
+  return client;
 };
 
-// Función para inicializar todas las cuentas (al arrancar la app)
+// Función para inicializar todas las cuentas
 const initializeAllClients = async () => {
   const accounts = await Account.find({});
   accounts.forEach((account) => {
@@ -105,8 +68,8 @@ const sendMessage = async (accountId, phoneNumber, message) => {
     throw new Error(`Cliente ${accountId} no está inicializado.`);
   }
 
-  const chatId = `${phoneNumber}@c.us`;
-  await client.sendMessage(chatId, message);
+  const chatId = `${phoneNumber}@s.whatsapp.net`;
+  await client.sendMessage(chatId, { text: message });
 };
 
 module.exports = { initializeAllClients, sendMessage, initializeClient };

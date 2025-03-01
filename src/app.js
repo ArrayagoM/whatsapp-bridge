@@ -5,7 +5,6 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const whatsappRoutes = require('./routes/whatsappRoutes');
 const { initializeAllClients } = require('./services/whatsappService');
-const { injectSpeedInsightsScript } = require('@vercel/speed-insights');
 
 dotenv.config();
 
@@ -13,33 +12,29 @@ const app = express();
 app.use(express.json());
 app.use(morgan('dev'));
 
+// Conectar a MongoDB
 mongoose
   .connect(process.env.MONGO_URI, {})
   .then(async () => {
     console.log('Conectado a MongoDB');
     await initializeAllClients();
   })
-  .then(() => console.log('🟢 Conectado a MongoDB'))
-  .catch((err) => console.error('🔴 Error al conectar a MongoDB:', err));
+  .catch((err) => console.error('No se pudo conectar a MongoDB', err));
 
-app.use((req, res, next) => {
-  res.setHeader(
-    'Content-Security-Policy',
-    "script-src 'self' 'unsafe-inline' https://*.vercel.app"
-  );
-  injectSpeedInsightsScript(res);
-  next();
-});
+// Servir archivos estáticos
+app.use(express.static(path.join(__dirname, 'views')));
 
-app.use(express.static(path.join(__dirname, 'src', 'views')));
+// Ruta para servir el archivo HTML
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
 
+// Ruta para manejar el favicon
 app.get('/favicon.ico', (req, res) => {
   res.status(204).end();
 });
 
+// Rutas de la API
 app.use('/api/whatsapp', whatsappRoutes);
 
 module.exports = app;
