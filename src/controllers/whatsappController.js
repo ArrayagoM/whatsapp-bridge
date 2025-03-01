@@ -1,5 +1,5 @@
 const whatsappService = require('../services/whatsappService');
-
+const Account = require('../models/Account');
 // Iniciar sesión y mostrar QR
 const startSession = async (req, res) => {
   const { accountId } = req.body;
