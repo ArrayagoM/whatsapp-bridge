@@ -30,6 +30,9 @@ const registerUser = async (req, res) => {
   const { name, phoneNumber } = req.body;
 
   try {
+    if (!Account) {
+      throw new Error("El modelo Account no está definido");
+    }
     const account = new Account({ name, phoneNumber });
     await account.save();
 

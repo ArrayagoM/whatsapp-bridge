@@ -9,5 +9,5 @@ const accountSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
-module.exports = mongoose.model('Account', accountSchema);
+const Account = mongoose.model('Account', accountSchema);
+module.exports = Account;
