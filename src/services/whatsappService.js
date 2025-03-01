@@ -39,7 +39,17 @@ const initializeClient = async (accountId) => {
       puppeteer: {
         headless: true,
         executablePath: '/usr/bin/chromium-browser',
-        args: process.env.NODE_ENV === 'production' ? chromium.args : [],
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process',
+          '--disable-gpu',
+        ],
+        headless: true,
       },
     });
 
@@ -65,15 +75,10 @@ const initializeClient = async (accountId) => {
       }
     });
 
-    client.on('disconnected', async (reason) => {
-      console.log(`Cliente ${accountId} desconectado. Razón: ${reason}`);
-      clients.delete(accountId);
-      await Session.deleteOne({ accountId });
-    });
-
     client.on('disconnected', (reason) => {
       console.log('Cliente desconectado:', reason);
       client.destroy();
+      process.exit(1);
     });
 
     try {
